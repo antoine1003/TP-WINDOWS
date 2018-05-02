@@ -99,6 +99,6 @@ int main()
 {
     loadLibrary();
     // printf() displays the string inside quotation
-    printf("Hello, World!");
+    printf("Hello, ta mere!");
     return 0;
 }
