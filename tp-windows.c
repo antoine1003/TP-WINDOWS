@@ -93,12 +93,12 @@ int loadLibrary()
 
  /*HANDLE GetStdHandle( DWORD nStdHandle);
     // Puede ser el parámetro: STD_INPUT_HANDLE, STD_OUTPUT_HANDLE o STD_ERROR_HANDLE.
-BOOL SetStdHandle( DWORD nStdHandle, HANDLE hHandle);*/
+    BOOL SetStdHandle( DWORD nStdHandle, HANDLE hHandle);*/
 
 int main()
 {
     loadLibrary();
     // printf() displays the string inside quotation
-    printf("Hello, ta mere!");
+    printf("Hello, World!");
     return 0;
 }
