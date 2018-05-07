@@ -1,7 +1,8 @@
 #include <stdio.h>
 #include "dllhandler.h"
+#include "parking2.h"
 // Library loaded to be able to use the bool type
-#include <stdbool.h>
+#include<iostream>
 
 /* 
  * TODO: Add FreeLibrary() when the programme is closed
@@ -46,18 +47,28 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved)
     return TRUE;
 }
 
+std::wstring s2ws(const std::string& s)
+{
+    int len;
+    int slength = (int)s.length() + 1;
+    len = MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, 0, 0); 
+    wchar_t* buf = new wchar_t[len];
+    MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, buf, len);
+    std::wstring r(buf);
+    delete[] buf;
+    return r;
+}
 
 /**
  * Load the library
  * @return 0 if the library is successfuly chared, -1 otherwise
  */
-int loadLibrary()
+int loadLibrary(TIPO_FUNCION_LLEGADA f_llegadas[], TIPO_FUNCION_SALIDA f_salidas[],long intervalo, bool d)
 {
     // Full path to the library
-    char* lpLibFileName = "C:/Users/antoi/Google Drive/ESAIP/ERASMUS2/SOII/TP WINDOWS/parking2.dll";
-
+    // Converting it to the LPCWSTR format
     // Loading the DLL
-    HINSTANCE loadLibraryReturnValue = LoadLibrary(lpLibFileName);
+    HINSTANCE loadLibraryReturnValue = LoadLibrary("C:/Users/antoi/Google Drive/ESAIP/ERASMUS2/SOII/TP WINDOWS/parking2.dll");
 
     // Check is the library has been charged correctly
     if(loadLibraryReturnValue != NULL){
@@ -70,13 +81,13 @@ int loadLibrary()
         // Check if the initialization was successful
         if(returnValueDllMain == TRUE)
         {
-            FARPROC getProcAddReturnValue = GetProcAddress(loadLibraryReturnValue,"PARKING2_inicio");
-            if (getProcAddReturnValue == NULL)
+            FARPROC fPARKING2_inicio = GetProcAddress(loadLibraryReturnValue,"PARKING2_inicio");
+            if (fPARKING2_inicio == NULL)
             {
                 printf("Error: GetProcAddress\n");
                 return -1;
             }
-            printf("El valor de la funcion es %d.\n", getProcAddReturnValue()); 
+            printf("El valor de la funcion es %d.\n", fPARKING2_inicio()); 
         }
         else
         {
@@ -91,13 +102,75 @@ int loadLibrary()
     }
 }
 
- /*HANDLE GetStdHandle( DWORD nStdHandle);
-    // Puede ser el parámetro: STD_INPUT_HANDLE, STD_OUTPUT_HANDLE o STD_ERROR_HANDLE.
-BOOL SetStdHandle( DWORD nStdHandle, HANDLE hHandle);*/
-
-int main()
+#pragma region Entering car functions  
+int firstFitEnter(HCoche hc)
 {
-    loadLibrary();
+  return -1;
+} 
+
+int nextFitEnter(HCoche hc)
+{
+   return -1;
+}
+
+int bestFitEnter(HCoche hc)
+{  
+  return -2;
+}
+
+int worstFitEnter(HCoche hc)
+{
+    return -2;
+}
+#pragma endregion  
+
+
+#pragma region Getting out car functions
+int firstFitOut(HCoche hc)
+{
+  return -1;
+} 
+
+int nextFitOut(HCoche hc)
+{
+   return -1;
+}
+
+int bestFitOut(HCoche hc)
+{  
+  return -2;
+}
+
+int worstFitOut(HCoche hc)
+{
+    return -2;
+}
+#pragma endregion
+
+int main(int argc, char *argv[])
+{
+    TIPO_FUNCION_LLEGADA f_llegadasP[4] = {&firstFitEnter, &nextFitEnter, &bestFitEnter, &worstFitEnter};
+    TIPO_FUNCION_SALIDA f_salidaP[4] = {&firstFitOut, &nextFitOut, &bestFitOut, &worstFitOut};
+    // Check parameters    
+    long interval = 10;
+    bool debug = false;
+    if(argc == 3)
+    {
+        interval = (long)argv[1];
+        std::string debugStr = argv[2];
+        if(debugStr.compare("D") == 0)
+            debug = true;
+    }
+    else if(argc == 2){
+        interval = (long)argv[1];
+    }
+    else 
+    {
+        printf("Please provide the requiered parameter(s)");
+        exit(0);
+    }
+
+    loadLibrary(f_llegadasP, f_salidaP, interval, debug);
     // printf() displays the string inside quotation
     printf("Hello, World!");
     return 0;
