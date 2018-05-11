@@ -1,13 +1,55 @@
 #include <stdio.h>
 #include "dllhandler.h"
 #include "parking2.h"
+#include <thread>
 // Library loaded to be able to use the bool type
 #include<iostream>
 
-/* 
- * TODO: Add FreeLibrary() when the programme is closed
- */
+#define SLEEPING_TIME_MS 5000
 
+#pragma region Variables Declaration
+// Structure for the param of apagar func
+struct PARKING2_aparcar_params {
+    HCoche HC;
+    void* DATOS;
+    TIPO_FUNCION_APARCAR_COMMIT FUNC_APAG_COM;
+    TIPO_FUNCION_PERMISO_AVANCE FUNC_PERM_AVA;
+    TIPO_FUNCION_PERMISO_AVANCE_COMMIT FUNC_PERM_AVA_COM;
+};
+
+// Debug state
+bool debug = false;
+// Parking useed
+int firstFitParking[80] = {0};
+int bestFitParking[80] = {0};
+int worstFitParking[80] = {0};
+int lastFitParking[80] = {0};
+using namespace std;
+#pragma endregion
+
+#pragma region Declaration DLL functions
+// Function PARKING2_inicio
+typedef int (*DLLFUNCINIT)(TIPO_FUNCION_LLEGADA f_llegadas[], TIPO_FUNCION_SALIDA f_salidas[],long intervalo, bool d);
+ DLLFUNCINIT fPARKING2_inicio;
+
+// Function PARKING2_fin
+typedef int (*DLLFUNCFIN)();
+DLLFUNCFIN fPARKING2_fin;
+
+// Function PARKING2_getNUmero
+typedef int (*DLLFUNCGETNUM)(HCoche hc);
+DLLFUNCGETNUM fPARKING2_getNUmero;
+
+//Function PARKING2_aparcar
+typedef int (*DLLFUNCAPAC)(HCoche ,void *datos,TIPO_FUNCION_APARCAR_COMMIT, TIPO_FUNCION_PERMISO_AVANCE, TIPO_FUNCION_PERMISO_AVANCE_COMMIT);
+DLLFUNCAPAC fPARKING2_aparcar;
+
+//Function fPARKING2_getDatos
+typedef void* (*DLLFUNCGETDAT)(HCoche);
+DLLFUNCGETDAT fPARKING2_getDatos;
+#pragma endregion
+
+#pragma region Library handling
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved)
 {
     // Perform actions based on the reason for calling.
@@ -47,28 +89,16 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved)
     return TRUE;
 }
 
-std::wstring s2ws(const std::string& s)
-{
-    int len;
-    int slength = (int)s.length() + 1;
-    len = MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, 0, 0); 
-    wchar_t* buf = new wchar_t[len];
-    MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, buf, len);
-    std::wstring r(buf);
-    delete[] buf;
-    return r;
-}
-
 /**
  * Load the library
  * @return 0 if the library is successfuly chared, -1 otherwise
  */
-int loadLibrary(TIPO_FUNCION_LLEGADA f_llegadas[], TIPO_FUNCION_SALIDA f_salidas[],long intervalo, bool d)
+int loadLibrary()
 {
     // Full path to the library
     // Converting it to the LPCWSTR format
     // Loading the DLL
-    HINSTANCE loadLibraryReturnValue = LoadLibrary("C:/Users/antoi/Google Drive/ESAIP/ERASMUS2/SOII/TP WINDOWS/parking2.dll");
+    HINSTANCE loadLibraryReturnValue = LoadLibrary("parking2.dll");
 
     // Check is the library has been charged correctly
     if(loadLibraryReturnValue != NULL){
@@ -81,13 +111,47 @@ int loadLibrary(TIPO_FUNCION_LLEGADA f_llegadas[], TIPO_FUNCION_SALIDA f_salidas
         // Check if the initialization was successful
         if(returnValueDllMain == TRUE)
         {
-            FARPROC fPARKING2_inicio = GetProcAddress(loadLibraryReturnValue,"PARKING2_inicio");
+            #pragma region Load all needed functions
+            // PARKING2_inicio
+            fPARKING2_inicio = (DLLFUNCINIT)GetProcAddress(loadLibraryReturnValue,"PARKING2_inicio");
             if (fPARKING2_inicio == NULL)
             {
-                printf("Error: GetProcAddress\n");
+                printf("Error: GetProcAddress inicio\n");
                 return -1;
             }
-            printf("El valor de la funcion es %d.\n", fPARKING2_inicio()); 
+            
+            // PARKING2_fin
+            fPARKING2_fin = (DLLFUNCFIN)GetProcAddress(loadLibraryReturnValue,"PARKING2_fin");
+            if (fPARKING2_fin == NULL)
+            {
+                printf("Error: GetProcAddress fPARKING2_fin\n");
+                return -1;
+            }
+
+            // PARKING2_getNUmero
+            fPARKING2_getNUmero = (DLLFUNCGETNUM)GetProcAddress(loadLibraryReturnValue,"PARKING2_getNUmero");
+            if (fPARKING2_getNUmero == NULL)
+            {
+                printf("Error: GetProcAddress PARKING2_getNUmero\n");
+                return -1;
+            }
+
+            // PARKING2_getNUmero
+            fPARKING2_aparcar = (DLLFUNCAPAC)GetProcAddress(loadLibraryReturnValue,"PARKING2_aparcar");
+            if (fPARKING2_aparcar == NULL)
+            {
+                printf("Error: GetProcAddress PARKING2_aparcar\n");
+                return -1;
+            }
+
+            // PARKING2_getNUmero
+            fPARKING2_getDatos = (DLLFUNCGETDAT)GetProcAddress(loadLibraryReturnValue,"PARKING2_getDatos");
+            if (fPARKING2_getDatos == NULL)
+            {
+                printf("Error: GetProcAddress PARKING2_getDatos\n");
+                return -1;
+            }
+            #pragma endregion
         }
         else
         {
@@ -102,20 +166,64 @@ int loadLibrary(TIPO_FUNCION_LLEGADA f_llegadas[], TIPO_FUNCION_SALIDA f_salidas
     }
 }
 
+#pragma endregion
+
+#pragma region permisoAvance & permisoAvanceCommit & commit
+void goForward(HCoche hc)
+{
+
+}
+
+void goForwardCommit(HCoche hc)
+{
+    
+}
+
+void commit(HCoche hc)
+{
+
+}
+#pragma endregion
+
+#pragma region Wrapper function
+DWORD WINAPI PARKING2_aparcar_wrapper(LPVOID lpParameter)
+{
+    PARKING2_aparcar_params *params = (PARKING2_aparcar_params*) lpParameter;
+    int value = fPARKING2_aparcar(params->HC, params->DATOS, params->FUNC_APAG_COM, params->FUNC_PERM_AVA, params->FUNC_PERM_AVA_COM);
+    delete params;
+    cout << "Moncul";
+    return value;
+}
+#pragma endregion
+
 #pragma region Entering car functions  
 int firstFitEnter(HCoche hc)
-{
-  return -1;
+{   
+    // Thread parametters
+    DWORD threadId;
+
+    PARKING2_aparcar_params* params = new PARKING2_aparcar_params;
+    params->HC = hc;
+    params->DATOS = fPARKING2_getDatos(hc);
+    params->FUNC_APAG_COM = &commit;
+    params->FUNC_PERM_AVA = &goForward;
+    params->FUNC_PERM_AVA_COM = &goForwardCommit;
+
+    HANDLE hThread = CreateThread(NULL, 0, &PARKING2_aparcar_wrapper, params, 0, &threadId);
+    if (!hThread)
+        delete params;
+    cout << "***********************Bite";
+    return 0;
 } 
 
 int nextFitEnter(HCoche hc)
 {
-   return -1;
+    return -1;
 }
 
 int bestFitEnter(HCoche hc)
 {  
-  return -2;
+    return -2;
 }
 
 int worstFitEnter(HCoche hc)
@@ -124,11 +232,11 @@ int worstFitEnter(HCoche hc)
 }
 #pragma endregion  
 
-
 #pragma region Getting out car functions
 int firstFitOut(HCoche hc)
 {
-  return -1;
+    printf("firstFitOut");
+    return -1;
 } 
 
 int nextFitOut(HCoche hc)
@@ -147,13 +255,14 @@ int worstFitOut(HCoche hc)
 }
 #pragma endregion
 
+
 int main(int argc, char *argv[])
 {
     TIPO_FUNCION_LLEGADA f_llegadasP[4] = {&firstFitEnter, &nextFitEnter, &bestFitEnter, &worstFitEnter};
     TIPO_FUNCION_SALIDA f_salidaP[4] = {&firstFitOut, &nextFitOut, &bestFitOut, &worstFitOut};
+
     // Check parameters    
-    long interval = 10;
-    bool debug = false;
+    long interval = 10;    
     if(argc == 3)
     {
         interval = (long)argv[1];
@@ -166,12 +275,26 @@ int main(int argc, char *argv[])
     }
     else 
     {
-        printf("Please provide the requiered parameter(s)");
+        printf("Please provide the required parameter(s)");
         exit(0);
     }
 
-    loadLibrary(f_llegadasP, f_salidaP, interval, debug);
-    // printf() displays the string inside quotation
-    printf("Hello, World!");
+    loadLibrary();
+
+    int returnInicio = fPARKING2_inicio(f_llegadasP, f_salidaP, interval, debug);
+
+    if (returnInicio == -1) {
+        PERROR("fPARKING2_inicio");
+        exit(0);
+    }
+    
+    Sleep(SLEEPING_TIME_MS);
+    int finReturn = fPARKING2_fin();
+    
     return 0;
 }
+
+/* 
+ * TODO: - Add FreeLibrary() when the programme is closed
+ *       - 
+ */
